@@ -1,3 +1,7 @@
+Aqui está o README atualizado com a etapa de configuração do ambiente virtual destacada:
+
+---
+
 # Chat Terminal com MongoDB e Criptografia
 
 ## Descrição
@@ -26,7 +30,22 @@ Este projeto é um chat por terminal desenvolvido para a disciplina de Estudo de
    cd MongoChat
    ```
 
-2. **Execute o chat:**
+2. **Configuração do Ambiente Virtual:**
+
+   Se você estiver **usando o PyCharm**, esta etapa não é necessária, pois a IDE configura o ambiente virtual automaticamente.
+
+   Caso contrário, siga as etapas abaixo para configurar o ambiente virtual manualmente:
+
+   macOS/Linux
+   ```bash
+   source venv/bin/activate
+   ```
+   Windows
+   ```bash
+   venv\Scripts\activate
+   ```
+   
+4. **Execute o chat:**
    ```bash
    python main.py
    ```
@@ -40,3 +59,10 @@ Contribuições são bem-vindas! Sinta-se à vontade para enviar um pull request
 ## Licença
 
 Este projeto está licenciado sob a MIT License. Consulte o arquivo LICENSE para mais detalhes.
+
+---
+
+Isso adiciona as instruções de configuração do ambiente virtual com a nota específica sobre o PyCharm.
+
+**a.** Deseja adicionar instruções para configurar o MongoDB?  
+**b.** Precisa de exemplos de criptografia para as mensagens?
