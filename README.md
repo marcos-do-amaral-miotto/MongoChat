@@ -38,11 +38,11 @@ Este projeto é um chat por terminal desenvolvido para a disciplina de Estudo de
 
    macOS/Linux
    ```bash
-   source venv/bin/activate
+   source .venv/bin/activate
    ```
    Windows
    ```bash
-   venv\Scripts\activate
+   .venv\Scripts\activate
    ```
    
 4. **Execute o chat:**
