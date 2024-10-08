@@ -2,8 +2,8 @@ from databases.mongohandler import MongoHandler
 
 if __name__ == '__main__':
     print("\n" * 130)
-    client = MongoHandler()
-    client.connect()
+    mongo = MongoHandler()
+    mongo.connect()
     print("Olá, bem vindo ao MongoZap!\n")
     while True:
         option = input("1 - Fazer Login\n2 - Criar uma conta\nEscolha a opção desejada: ")
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     if option == 1:
         user = input("Digite o email para acesso: ")
         password = input("Digite a senha para acesso: ")
-        if client.authenticate(user, password):
-            print("massa")
+        if mongo.authenticate(user, password):
+            print("Válido")
         else:
-            print("Not massa")
+            print("Inválido")
