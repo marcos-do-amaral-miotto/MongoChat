@@ -26,7 +26,7 @@ Este projeto é um chat por terminal desenvolvido para a disciplina de Estudo de
 
 1. **Clone o repositório:**
    ```bash
-   git clone https://github.com/usuario/chat-terminal.git
+   git clone https://github.com/marcos-do-amaral-miotto/MongoChat.git
    cd MongoChat
    ```
 
@@ -42,7 +42,7 @@ Este projeto é um chat por terminal desenvolvido para a disciplina de Estudo de
    ```
    Windows
    ```bash
-   .venv\Scripts\activate
+   .venv\bin\Activate.ps1
    ```
    
 4. **Execute o chat:**
