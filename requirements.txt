@@ -1,0 +1,4 @@
+pymongo
+aes-pkcs5
+pymongo[aws]
+pymongo[gssapi,aws,ocsp,snappy,zstd,encryption]
