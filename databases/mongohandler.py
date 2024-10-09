@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from databases.entities import *
 
 class MongoHandler:
     def __init__(self, connection_string="mongodb+srv://main-user:database@aulas.sj2sb.mongodb.net/?retryWrites"
@@ -25,3 +26,8 @@ class MongoHandler:
             return False
         except Exception as e:
             print(f"Erro de conexão com o Banco de Dados: {e}\n")
+    
+    def register_new_user(user:Users):
+        if user is None:
+            raise Exception("Usuário não encontrado!")
+        print(user)
