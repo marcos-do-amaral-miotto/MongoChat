@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from databases.entities import *
 
+
 class MongoHandler:
     def __init__(self, connection_string="mongodb+srv://main-user:database@aulas.sj2sb.mongodb.net/?retryWrites"
                                          "=true&w=majority&appName=Aulas", database_name="mongo_chat"):
@@ -27,7 +28,11 @@ class MongoHandler:
         except Exception as e:
             print(f"Erro de conexão com o Banco de Dados: {e}\n")
     
-    def register_new_user(user:Users):
-        if user is None:
-            raise Exception("Usuário não encontrado!")
-        print(user)
+    def register_new_user(self, new_user: Users):
+        users = self.database["users"]
+        for user in users.find():
+            if user["email"] == new_user.email:
+                raise Exception('''Email já cadastrado!
+O email informado já está associado a uma conta. Por favor, utilize outro endereço de email.''')
+        users.insert_one(new_user.__dict__)
+
