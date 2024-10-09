@@ -1,6 +1,22 @@
 from databases.mongohandler import MongoHandler
 from databases.entities import *
 from getpass import getpass
+import customtkinter
+
+class App(customtkinter.CTk):
+    def __init__(self):
+        super().__init__()
+
+        # Window properties:
+        self.geometry("480x640")
+
+        self.button = customtkinter.CTkButton(self, text="my button", command=self.button_callbck)
+        self.button.pack(padx=20, pady=20)
+
+    def button_callbck(self):
+        print("button clicked")
+
+
 
 
 def build_chat():
@@ -75,6 +91,8 @@ def menu():
 
 
 if __name__ == '__main__':
+    app = App()
+    app.mainloop()
     mongo = MongoHandler()
     mongo.connect()
     menu()
