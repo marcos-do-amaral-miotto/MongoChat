@@ -17,8 +17,6 @@ class App(customtkinter.CTk):
         print("button clicked")
 
 
-
-
 def build_chat():
     print("\n" * 130)
     input("digite algo pra voltar pro menu")
