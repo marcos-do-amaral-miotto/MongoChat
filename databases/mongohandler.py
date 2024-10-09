@@ -1,6 +1,5 @@
 from pymongo import MongoClient
 
-
 class MongoHandler:
     def __init__(self, connection_string="mongodb+srv://main-user:database@aulas.sj2sb.mongodb.net/?retryWrites"
                                          "=true&w=majority&appName=Aulas", database_name="mongo_chat"):
