@@ -1,8 +1,5 @@
-from cffi.model import pointer_cache
-
 from databases.mongohandler import MongoHandler
 from databases.entities import *
-from getpass import getpass
 from customtkinter import *
 
 class App(CTk):
@@ -15,8 +12,9 @@ class App(CTk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.login = None
-        self.build_login()
+        self.login = CTkFrame(self)
+        self.register = CTkFrame(self)
+        option = self.build_login()
 
     def build_login(self):
         self.login = CTkFrame(self, bg_color="#00684a")
@@ -25,7 +23,7 @@ class App(CTk):
         email = CTkEntry(self.login, placeholder_text="Email", font=CTkFont(family="Arial", size=22))
         email.configure(bg_color='transparent', corner_radius=30, width=400)
         email.pack(pady=10)
-        password = CTkEntry(self.login, placeholder_text="Senha", font=CTkFont(family="Arial", size=22))
+        password = CTkEntry(self.login, placeholder_text="Senha", font=CTkFont(family="Arial", size=22), show='*')
         password.configure(bg_color='transparent', corner_radius=30, width=400)
         password.pack(pady=10)
         sign_up_frame = CTkFrame(self.login, bg_color="transparent", fg_color='transparent')
@@ -35,7 +33,7 @@ class App(CTk):
         sign_up_label.grid(column = 0, row=0)
         sign_up_button = CTkButton(sign_up_frame, text="Crie uma agora", fg_color='transparent', bg_color='transparent',
                                    font=CTkFont(family="Arial", size=20, weight='bold'), text_color="#00684a",
-                                   hover=False)
+                                   hover=False, command=self.build_register)
         sign_up_button.configure(cursor='hand2')
         sign_up_button.grid(column = 1, row=0)
         login_button = CTkButton(self.login, text="Entrar", font=CTkFont(family="Arial", size=30))
@@ -43,27 +41,43 @@ class App(CTk):
                                hover_color="#00533b", cursor='hand2')
         login_button.pack(pady=10)
 
+    def build_register(self):
+        self.login.destroy()
+        self.register = CTkFrame(self, bg_color="#00684a")
+        self.register.grid(row=0, column=0, padx=20, pady=80, sticky="nsew")
+        back_button = CTkButton(self.register, text="⭠", font=CTkFont('Arial', 50), bg_color='transparent',
+                                fg_color='transparent', width=30, hover=False, command=self.build_login())
+        back_button.configure(cursor='hand2')
+        back_button.place(x=10, y=10)
+        CTkLabel(self.register, text="Cadastro", font=CTkFont(family="Arial", size=80, weight='bold')).pack(pady=70)
+        email = CTkEntry(self.register, placeholder_text="Email", font=CTkFont(family="Arial", size=22))
+        email.configure(bg_color='transparent', corner_radius=30, width=400)
+        email.pack()
+        password = CTkEntry(self.register, placeholder_text="Senha", font=CTkFont(family="Arial", size=22), show='*')
+        password.configure(bg_color='transparent', corner_radius=30, width=400)
+        password.pack(pady=20)
+        sign_up_frame = CTkFrame(self.register, bg_color="transparent", fg_color='transparent')
+        sign_up_frame.pack()
+        sign_up_label = CTkLabel(sign_up_frame, text="Ainda não tem conta?", fg_color='transparent',
+                                 bg_color='transparent', font=CTkFont(family="Arial", size=20), text_color="white")
+        sign_up_label.grid(column = 0, row=0)
+        sign_up_button = CTkButton(sign_up_frame, text="Crie uma agora", fg_color='transparent', bg_color='transparent',
+                                   font=CTkFont(family="Arial", size=20, weight='bold'), text_color="#00684a",
+                                   hover=False)
+        sign_up_button.configure(cursor='hand2')
+        sign_up_button.grid(column = 1, row=0)
+        login_button = CTkButton(self.register, text="Entrar", font=CTkFont(family="Arial", size=30))
+        login_button.configure(bg_color='transparent', fg_color="#00684a", corner_radius=30, width=280,
+                               hover_color="#00533b", cursor='hand2')
+        login_button.pack(pady=10)
+
+
 
 def build_chat():
     print("\n" * 130)
     input("digite algo pra voltar pro menu")
 
 
-def sign_in():
-    for i in range(4, 0, -1):
-        print("\n" * 130)
-        print("--- Login ---\nCaso queira voltar ao menu inicial digite -1\n")
-        if i != 4:
-            print(f"Usuário inválido! Você ainda tem {i} chance(s).\n")
-        email = input("Digite o email: ")
-        if email == '-1':
-            break
-        password = getpass(prompt="Digite a senha: ")
-        if password == '-1':
-            break
-        if mongo.authenticate(email, password):
-            build_chat()
-            break
 
 
 def sign_up():
@@ -107,7 +121,8 @@ def menu():
             if sign_up() == 0:
                 header = "Usuário cadastrado com sucesso!"
         elif option == "2":
-            sign_in()
+            # sign_in()
+            print("sla")
         elif option == "3":
             print("Saindo...")
             break
