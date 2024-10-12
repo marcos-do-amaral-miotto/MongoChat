@@ -22,7 +22,7 @@ class MongoHandler:
             print(f"Falha na conexão com o Banco de Dados: {e}")
             self.client = None
 
-    def get_user(self, username, password) -> Users:
+    def get_user(self, username: str, password: str) -> Users:
         users = self.database["users"].find()
         for user in users:
             if user["username"] == username and user["password"] == password:
@@ -32,10 +32,14 @@ class MongoHandler:
         return Users()
 
     def get_all_users(self):
-        documents = list(self.database["users"].find())
+        documents = self.database["users"].find()
+        users_list = []
         for doc in documents:
             doc.pop("password")
-        return documents
+            found_user = Users()
+            found_user.set_user_by_database(doc)
+            users_list.append(found_user)
+        return users_list
 
     def register_new_user(self, new_user: Users):
         users = self.database["users"]
@@ -46,25 +50,25 @@ O username informado já está associado
 a uma conta. Por favor, utilize outro.''')
         users.insert_one(new_user.__dict__)
 
-    def get_messages(self, first_user: str, second_user: str):
-        return list(self.database["messages"].find(
-            {
-                "$and": [
-                    {
-                        "$or": [
-                            {"sender": first_user},
-                            {"sender": second_user}
-                        ]
-                    },
-                    {
-                        "$or": [
-                            {"receiver": first_user},
-                            {"receiver": second_user}
-                        ]
-                    }
-                ]
-            }))
+    def get_messages(self, first_user: Users, second_user: Users) -> list[Messages]:
+        results = self.database["messages"].find({
+            "sender": {
+                "$in": [first_user.get_id(), second_user.get_id()]
+            },
+            "receiver": {
+                "$in": [first_user.get_id(), second_user.get_id()]
+            }
+        })
+        messages = []
+        for message in results:
+            found_message = Messages()
+            found_message.set_message_by_database(message)
+            messages.append(found_message)
+        return messages
 
-    def send_message(self, sender: str, receiver: str, content: str):
-        message = Messages(sender, receiver, content, datetime.now())
-        self.database["messages"].insert_one(message.__dict__)
+
+    def send_message(self, sender: Users, receiver: Users, content: str):
+        message = Messages(sender, receiver, content)
+        message = message.__dict__
+        message.pop("_id")
+        self.database["messages"].insert_one(message)

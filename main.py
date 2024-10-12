@@ -12,7 +12,9 @@ class App(CTk):
         self.mongo.connect()
 
         # print(self.mongo.get_messages("marcos_miotto", "julia123"))
-        self.mongo.send_message("user", "marcos_miotto", "Bem vindo ao MongoZap!")
+        eu = self.mongo.get_user("marcos_miotto", "@Senha123")
+        ele = self.mongo.get_user("julia123", "@Senha123")
+        # self.mongo.send_message(ele, eu, "Muito bem obrigada!")
 
         # Configurações da window:
         self.geometry("525x700")
@@ -20,14 +22,61 @@ class App(CTk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # Conta do usuário atual
-        self.current_user = Users(name="Marcos do Amaral Miotto", username="marcos_miotto", password="@Senha123")
+        # Conta do usuário atual e chat atual
+        self.current_user: Users = eu
+        self.current_messages: list[Messages] = []
 
         # Configurações dos widgets
         self.login = CTkFrame(self)
         self.register = CTkFrame(self)
         self.chat_list = CTkFrame(self)
+        self.chat = CTkFrame(self)
         self.frame_menager(3)
+
+    def login_user(self, username: str, password: str, message_label:CTkLabel):
+        try:
+            if username == '' or password == '' or username.isspace() or password.isspace():
+                return
+            user = self.mongo.get_user(username, password)
+            if user.is_empty():
+                message_label.configure(text='Usuário ou senha incorretos!')
+            else:
+                self.current_user = user
+                self.frame_menager(3)
+        except Exception as e:
+            message_label.configure(text=e)
+
+    def register_user(self, name: str, username: str, password, message_label: CTkLabel):
+        try:
+            if name == '' or username == '' or password == ' ' or\
+               name.isspace() or username.isspace() or password.isspace():
+                return
+            user = Users()
+            user.set_name(name)
+            user.set_username(username)
+            user.set_password(password)
+            self.mongo.register_new_user(user)
+            self.current_user = user
+            message_label.configure(text='Usuário cadastrado com sucesso!', text_color="#33866e")
+        except Exception as e:
+            message_label.configure(text=e, text_color='#cc1919')
+
+    def select_chat(self, second_user: Users):
+        self.current_messages = self.mongo.get_messages(self.current_user, second_user)
+        self.frame_menager(4)
+
+    def send_message(self, message, key):
+        if message.isspace() or message == '':
+            return
+        if key.isspace() or key == '':
+            error = CTkToplevel(self)
+            error.geometry("500x250")
+            CTkLabel(error, text="Nenhuma chave de \ncriptografia foi fornecida!", font=CTkFont(family="Aral", size=30),
+                     text_color="#cc1919").pack(pady=(50, 30))
+            CTkButton(error, text="Voltar", font=CTkFont(family="Arial", size=40), fg_color="#cc1919",
+                      hover_color='#a31414', command=lambda :error.destroy()).pack()
+            error.mainloop()
+            return
 
 
     def frame_menager(self, frame_number):
@@ -40,6 +89,8 @@ class App(CTk):
             self.build_register()
         elif frame_number == 3:
             self.build_chat_list()
+        elif frame_number == 4:
+            self.build_chat()
 
     def build_login(self):
         self.login = CTkFrame(self, bg_color="#00684a")
@@ -112,9 +163,6 @@ class App(CTk):
                                     command=lambda :self.register_user(name.get(), username.get(), password.get(), message_label))
         register_button.pack()
 
-    def select_messager(self, second_user: str):
-        print(self.mongo.get_messages(self.current_user.username, second_user))
-
     def build_chat_list(self):
         self.chat_list = CTkFrame(self)
         self.chat_list.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
@@ -130,40 +178,52 @@ class App(CTk):
         users.grid(row=0, column=0, padx=10, pady=(80, 10), sticky="nsew")
         users_list = self.mongo.get_all_users()
         for user in users_list:
-            if user["username"] == self.current_user.username:
+            if user.username == self.current_user.username:
                 continue
-
-            button = CTkButton(users, fg_color='#545454', cursor='hand2', height=70, text=f'{user["name"]} ({user["username"]})',
-                               font=CTkFont(family='Arial', size=25), anchor='w', command=lambda username = user["username"]:self.select_messager(username))
+            button = CTkButton(users, fg_color='#545454', cursor='hand2', height=70, text=f'{user.name}',
+                               font=CTkFont(family='Arial', size=25), anchor='w', hover_color="#434343",
+                               command=lambda sec_user = user:self.select_chat(sec_user))
             button.grid(column=0, sticky="nsew", pady=(10, 0))
 
-    def login_user(self, username: str, password: str, message_label:CTkLabel):
-        try:
-            if username == '' or password == '' or username.isspace() or password.isspace():
-                return
-            user = self.mongo.get_user(username, password)
-            if user.is_empty():
-                message_label.configure(text='Usuário ou senha incorretos!')
+    def build_chat(self):
+        self.chat = CTkFrame(self)
+        self.chat.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        self.chat.grid_rowconfigure(0, weight=1)
+        self.chat.grid_columnconfigure(0, weight=1)
+        back_button = CTkButton(self.chat, text="⭠", font=CTkFont('Arial', size=50), bg_color='transparent',
+                                fg_color='transparent', width=30, hover=False, cursor='hand2',
+                                command=lambda :self.frame_menager(3))
+        back_button.place(x=10, y=10)
+        key = CTkEntry(self.chat, placeholder_text="Chave de criptografia", font=CTkFont('Arial', 22),
+                       width=320)
+        key.place(y=25, x=80)
+        key_button = CTkButton(self.chat, text="🔑", font=CTkFont('Arial', size=40), bg_color='transparent',
+                                fg_color='transparent', width=30, hover=False, cursor='hand2',
+                                command=lambda :self.frame_menager(3))
+        key_button.place(x=410, y=10)
+        messages_frame = CTkScrollableFrame(self.chat)
+        messages_frame.grid_columnconfigure(0, weight=1)
+        messages_frame.grid(row=0, column=0, padx=10, pady=(80, 0), sticky="nsew")
+        for message in self.current_messages:
+            msg = CTkFrame(messages_frame, fg_color='#00533b')
+            label = CTkLabel(msg, text=message.content, font=CTkFont("Arial", 22), fg_color='transparent',
+                             bg_color='transparent')
+            label.pack(pady=5, padx=10)
+            if message.sender == self.current_user.get_id():
+                msg.configure(fg_color='#545454')
+                msg.grid(column=0, sticky='e')
             else:
-                self.current_user = user
-                self.frame_menager(3)
-        except Exception as e:
-            message_label.configure(text=e)
-
-    def register_user(self, name: str, username: str, password, message_label: CTkLabel):
-        try:
-            if name == '' or username == '' or password == ' ' or\
-               name.isspace() or username.isspace() or password.isspace():
-                return
-            user = Users()
-            user.set_name(name)
-            user.set_username(username)
-            user.set_password(password)
-            self.mongo.register_new_user(user)
-            self.current_user = user
-            message_label.configure(text='Usuário cadastrado com sucesso!', text_color="#33866e")
-        except Exception as e:
-            message_label.configure(text=e, text_color='#cc1919')
+                msg.grid(column=0, sticky='w')
+        new_message_frame = CTkFrame(self.chat)
+        new_message_frame.grid(row=1, column=0, pady=20)
+        new_message = CTkEntry(new_message_frame, placeholder_text="Mensagem", font=CTkFont('Arial', 22),
+                       width=400)
+        new_message.pack(side='left')
+        new_message.bind("<Return>", lambda :self.send_message(new_message.get(), key.get()))
+        send_message = CTkButton(new_message_frame, text="➤", font=CTkFont('Arial', size=40), bg_color='transparent',
+                                fg_color='transparent', width=30, hover=False, cursor='hand2',
+                                command=lambda :self.send_message(new_message.get(), key.get()))
+        send_message.pack(side='left')
 
 if __name__ == '__main__':
     app = App()

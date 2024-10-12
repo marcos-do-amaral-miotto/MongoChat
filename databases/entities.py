@@ -1,8 +1,12 @@
+from bson.objectid import ObjectId
 from datetime import datetime
 from re import compile
+from aes_pkcs5.algorithms.aes_cbc_pkcs5_padding import AESCBCPKCS5Padding
+
 
 class Users:
     def __init__(self, name=None, username=None, password=None):
+        self._id = None
         self.name = None
         self.username = None
         self.password = None
@@ -59,36 +63,79 @@ incluindo uma letra maiúscula, uma minúscula,
 um número e um caractere especial (@$!%*?&).''')
         self.password = password
 
+    def set_id(self, _id):
+        if type(_id) != ObjectId:
+            raise Exception("Id inválido!")
+        self._id = _id
+
+    def get_id(self):
+        return self._id
+
     def set_user_by_database(self, user:dict):
+        self._id = user.pop("_id")
         self.name = user.pop("name", None)
         self.username = user.pop("username", None)
         self.password = user.pop("password", None)
 
+    def __eq__(self, other):
+        if type(other) != type(self):
+            return False
+        if other.get_id() != self._id:
+            return False
+        if other.name != self.name:
+            return False
+        if other.username != self.username:
+            return False
+        return True
+
+    def __ne__(self, other):
+        if type(other) != type(self):
+            return True
+        if other.get_id() != self._id:
+            return True
+        if other.name != self.name:
+            return True
+        if other.username != self.username:
+            return True
+        return False
+
 class Messages:
-    def __init__(self, sender=None, receiver=None, content=None, timestamp = None):
+    def __init__(self, sender=None, receiver=None, content=None):
+        self._id = None
         self.sender = None
         self.receiver = None
         self.content = None
-        self.timestamp = None
+        self.timestamp = datetime.now()
         if sender is not None:
             self.set_sender(sender)
         if receiver is not None:
             self.set_receiver(receiver)
         if content is not None:
             self.set_content(content)
-        if timestamp is not None:
-            self.set_timestamp(timestamp)
 
-    def set_sender(self, sender: str):
-        self.sender = sender
+    def set_sender(self, sender: Users):
+        if self.receiver is not None and self.receiver == sender:
+            raise Exception("Não é possível enviar uma mensagem de mesmo remetente e destinatário!")
+        self.sender = sender.get_id()
 
-    def set_receiver(self, receiver: str):
-        self.receiver = receiver
+    def set_receiver(self, receiver: Users):
+        if self.sender is not None and self.sender == receiver:
+            raise Exception("Não é possível enviar uma mensagem de mesmo remetente e destinatário!")
+        self.receiver = receiver.get_id()
 
     def set_content(self, content: str):
         if content.isspace() or content == '':
             raise Exception("A mensagem não pode ser vazia!")
         self.content = content
 
-    def set_timestamp(self, timestamp: datetime):
-        self.timestamp = timestamp
+    def cypher_content(self, key, iv_parameter="0011223344556677", output_format="b64"):
+        cipher = AESCBCPKCS5Padding(key, output_format, iv_parameter)
+        encrypted = cipher.encrypt(self.content)
+        return encrypted
+
+    def set_message_by_database(self, message: dict):
+        self._id = message.pop("_id")
+        self.sender = message.pop("sender", None)
+        self.receiver = message.pop("receiver", None)
+        self.content = message.pop("content", None)
+        self.timestamp = message.pop("timestamp", None)
