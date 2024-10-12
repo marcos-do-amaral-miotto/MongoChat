@@ -146,3 +146,11 @@ class Messages:
         self.content = message.pop("content", None)
         self.timestamp = message.pop("timestamp", None)
         self.encrypted = True
+
+    def to_dict(self):
+        return {
+            'sender': self.sender,
+            'receiver': self.receiver,
+            'content': self.content,
+            'timestamp': self.timestamp
+        }

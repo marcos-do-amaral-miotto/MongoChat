@@ -72,7 +72,4 @@ a uma conta. Por favor, utilize outro.''')
     def register_message(self, message: Messages):
         if message.encrypted is False:
             raise Exception ("Mensagens não encriptadas não podem ser salvas no banco de dados!")
-        message = message.__dict__
-        message.pop("_id")
-        message.pop("encrypted")
-        self.database["messages"].insert_one(message)
+        self.database["messages"].insert_one(message.to_dict())

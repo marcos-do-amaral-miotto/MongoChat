@@ -76,7 +76,7 @@ class App(CTk):
             if i % 27 == 0:
                 message = message[0:i] + '\n' + message[i:len(message)]
         error = CTkToplevel(self)
-        error.geometry("500x250")
+        error.geometry("500x300")
         CTkLabel(error, text=message, font=CTkFont(family="Aral", size=30),
                  text_color="#cc1919").pack(pady=(50, 30))
         CTkButton(error, text="Voltar", font=CTkFont(family="Arial", size=40), fg_color="#cc1919",
@@ -87,11 +87,9 @@ class App(CTk):
         try:
             message.decrypt_content(key=key)
         except Exception as e:
-            self.error_popup(str(e) + "decription")
+            self.error_popup(str(e))
 
     def decrypt_conversation(self, key: str):
-        if not self.current_messages:
-            return
         if self.current_encrypted is False:
             self.error_popup("As mensagens já estão desincriptadas!")
             return
@@ -100,22 +98,23 @@ class App(CTk):
         for message in self.current_messages:
             self.decrypt_message(message, key)
         self.current_encrypted = False
+        self.current_key = key
         self.frame_menager(4)
 
-    def send_message(self, message: str, key: str):
+    def send_message(self, message: str):
         try:
             if message.isspace() or message == '':
                 return
-            if key.isspace() or key == '':
-                self.error_popup("Nenhuma chave de criptografia foi fornecida!")
+            if self.current_encrypted:
+                self.error_popup("É preciso desencriptar a conversa antes de mandar mensagem!")
                 return
             new_message = Messages(sender=self.current_user, receiver=self.current_receiver, content=message)
-            new_message.encrypt_content(key=key)
+            new_message.encrypt_content(key=self.current_key)
             self.mongo.register_message(new_message)
             if self.current_encrypted:
                 self.current_messages.append(new_message)
             else:
-                new_message.decrypt_content(key)
+                new_message.decrypt_content(self.current_key)
                 self.current_messages.append(new_message)
             self.frame_menager(4)
         except Exception as e:
@@ -266,10 +265,9 @@ class App(CTk):
         new_message = CTkEntry(new_message_frame, placeholder_text="Mensagem", font=CTkFont('Arial', 22),
                        width=400)
         new_message.pack(side='left')
-        new_message.bind("<Return>", lambda :self.send_message(new_message.get(), key.get()))
         send_message = CTkButton(new_message_frame, text="➤", font=CTkFont('Arial', size=40), bg_color='transparent',
                                 fg_color='transparent', width=30, hover=False, cursor='hand2',
-                                command=lambda :self.send_message(new_message.get(), key.get()))
+                                command=lambda :self.send_message(new_message.get()))
         send_message.pack(side='left')
 
 if __name__ == '__main__':
