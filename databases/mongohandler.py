@@ -48,7 +48,9 @@ class MongoHandler:
                 raise Exception('''Username já cadastrado!
 O username informado já está associado
 a uma conta. Por favor, utilize outro.''')
-        users.insert_one(new_user.__dict__)
+        user = new_user.__dict__
+        user.pop("_id")
+        users.insert_one(user)
 
     def get_messages(self, first_user: Users, second_user: Users) -> list[Messages]:
         results = self.database["messages"].find({
@@ -67,8 +69,10 @@ a uma conta. Por favor, utilize outro.''')
         return messages
 
 
-    def send_message(self, sender: Users, receiver: Users, content: str):
-        message = Messages(sender, receiver, content)
+    def register_message(self, message: Messages):
+        if message.encrypted is False:
+            raise Exception ("Mensagens não encriptadas não podem ser salvas no banco de dados!")
         message = message.__dict__
         message.pop("_id")
+        message.pop("encrypted")
         self.database["messages"].insert_one(message)

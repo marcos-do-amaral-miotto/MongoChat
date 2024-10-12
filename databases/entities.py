@@ -3,7 +3,6 @@ from datetime import datetime
 from re import compile
 from aes_pkcs5.algorithms.aes_cbc_pkcs5_padding import AESCBCPKCS5Padding
 
-
 class Users:
     def __init__(self, name=None, username=None, password=None):
         self._id = None
@@ -88,30 +87,22 @@ um número e um caractere especial (@$!%*?&).''')
             return False
         return True
 
-    def __ne__(self, other):
-        if type(other) != type(self):
-            return True
-        if other.get_id() != self._id:
-            return True
-        if other.name != self.name:
-            return True
-        if other.username != self.username:
-            return True
-        return False
-
 class Messages:
-    def __init__(self, sender=None, receiver=None, content=None):
+    def __init__(self, sender: Users=None, receiver: Users=None, content: str=None, encrypted=False):
         self._id = None
         self.sender = None
         self.receiver = None
         self.content = None
         self.timestamp = datetime.now()
+        self.encrypted = False
         if sender is not None:
             self.set_sender(sender)
         if receiver is not None:
             self.set_receiver(receiver)
         if content is not None:
             self.set_content(content)
+        if encrypted:
+            self.encrypted = True
 
     def set_sender(self, sender: Users):
         if self.receiver is not None and self.receiver == sender:
@@ -128,10 +119,25 @@ class Messages:
             raise Exception("A mensagem não pode ser vazia!")
         self.content = content
 
-    def cypher_content(self, key, iv_parameter="0011223344556677", output_format="b64"):
+    def encrypt_content(self, key, iv_parameter="0011223344556677", output_format="b64"):
+        if self.encrypted:
+            raise Exception("Mensagem já encriptada!")
+        if self.content is None:
+            raise Exception("Não há mensagem a ser encriptadas!")
         cipher = AESCBCPKCS5Padding(key, output_format, iv_parameter)
         encrypted = cipher.encrypt(self.content)
-        return encrypted
+        self.set_content(encrypted)
+        self.encrypted = True
+
+    def decrypt_content(self, key, iv_parameter="0011223344556677", output_format="b64"):
+        if self.encrypted is False:
+            raise Exception("Mensagem já desencriptada!")
+        if self.content is None:
+            raise Exception("Não há mensagem a ser desencriptada!")
+        cipher = AESCBCPKCS5Padding(key, output_format, iv_parameter)
+        decrypted = cipher.decrypt(self.content)
+        self.set_content(decrypted)
+        self.encrypted = False
 
     def set_message_by_database(self, message: dict):
         self._id = message.pop("_id")
@@ -139,3 +145,4 @@ class Messages:
         self.receiver = message.pop("receiver", None)
         self.content = message.pop("content", None)
         self.timestamp = message.pop("timestamp", None)
+        self.encrypted = True

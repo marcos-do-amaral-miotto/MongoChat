@@ -11,27 +11,25 @@ class App(CTk):
         self.mongo = MongoHandler()
         self.mongo.connect()
 
-        # print(self.mongo.get_messages("marcos_miotto", "julia123"))
-        eu = self.mongo.get_user("marcos_miotto", "@Senha123")
-        ele = self.mongo.get_user("julia123", "@Senha123")
-        # self.mongo.send_message(ele, eu, "Muito bem obrigada!")
-
         # Configurações da window:
         self.geometry("525x700")
         self.config(background="#00684a")
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # Conta do usuário atual e chat atual
-        self.current_user: Users = eu
+        # Definição das variáveis de conversa
+        self.current_user = Users()
+        self.current_receiver: Users = Users()
         self.current_messages: list[Messages] = []
+        self.current_key: str = ''
+        self.current_encrypted = True
 
         # Configurações dos widgets
         self.login = CTkFrame(self)
         self.register = CTkFrame(self)
         self.chat_list = CTkFrame(self)
         self.chat = CTkFrame(self)
-        self.frame_menager(3)
+        self.frame_menager(1)
 
     def login_user(self, username: str, password: str, message_label:CTkLabel):
         try:
@@ -63,26 +61,71 @@ class App(CTk):
 
     def select_chat(self, second_user: Users):
         self.current_messages = self.mongo.get_messages(self.current_user, second_user)
+        self.current_receiver = second_user
         self.frame_menager(4)
 
-    def send_message(self, message, key):
-        if message.isspace() or message == '':
+    def quit_chat(self):
+        self.current_receiver = Users()
+        self.current_messages: list[Messages] = []
+        self.current_key: str = ''
+        self.current_encrypted = True
+        self.frame_menager(3)
+
+    def error_popup(self, message: str):
+        for i in range(len(message)):
+            if i % 27 == 0:
+                message = message[0:i] + '\n' + message[i:len(message)]
+        error = CTkToplevel(self)
+        error.geometry("500x250")
+        CTkLabel(error, text=message, font=CTkFont(family="Aral", size=30),
+                 text_color="#cc1919").pack(pady=(50, 30))
+        CTkButton(error, text="Voltar", font=CTkFont(family="Arial", size=40), fg_color="#cc1919",
+                  hover_color='#a31414', command=lambda :error.destroy()).pack()
+        error.mainloop()
+
+    def decrypt_message(self, message: Messages, key: str):
+        try:
+            message.decrypt_content(key=key)
+        except Exception as e:
+            self.error_popup(str(e) + "decription")
+
+    def decrypt_conversation(self, key: str):
+        if not self.current_messages:
+            return
+        if self.current_encrypted is False:
+            self.error_popup("As mensagens já estão desincriptadas!")
             return
         if key.isspace() or key == '':
-            error = CTkToplevel(self)
-            error.geometry("500x250")
-            CTkLabel(error, text="Nenhuma chave de \ncriptografia foi fornecida!", font=CTkFont(family="Aral", size=30),
-                     text_color="#cc1919").pack(pady=(50, 30))
-            CTkButton(error, text="Voltar", font=CTkFont(family="Arial", size=40), fg_color="#cc1919",
-                      hover_color='#a31414', command=lambda :error.destroy()).pack()
-            error.mainloop()
             return
+        for message in self.current_messages:
+            self.decrypt_message(message, key)
+        self.current_encrypted = False
+        self.frame_menager(4)
 
+    def send_message(self, message: str, key: str):
+        try:
+            if message.isspace() or message == '':
+                return
+            if key.isspace() or key == '':
+                self.error_popup("Nenhuma chave de criptografia foi fornecida!")
+                return
+            new_message = Messages(sender=self.current_user, receiver=self.current_receiver, content=message)
+            new_message.encrypt_content(key=key)
+            self.mongo.register_message(new_message)
+            if self.current_encrypted:
+                self.current_messages.append(new_message)
+            else:
+                new_message.decrypt_content(key)
+                self.current_messages.append(new_message)
+            self.frame_menager(4)
+        except Exception as e:
+            self.error_popup(str(e))
 
     def frame_menager(self, frame_number):
         self.login.destroy()
         self.register.destroy()
         self.chat_list.destroy()
+        self.chat.destroy()
         if frame_number == 1:
             self.build_login()
         elif frame_number == 2:
@@ -190,30 +233,34 @@ class App(CTk):
         self.chat.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
         self.chat.grid_rowconfigure(0, weight=1)
         self.chat.grid_columnconfigure(0, weight=1)
+        messages_frame = CTkScrollableFrame(self.chat)
+        messages_frame.grid_columnconfigure(0, weight=1)
+        messages_frame.grid(row=0, column=0, padx=10, pady=(80, 0), sticky="nsew")
         back_button = CTkButton(self.chat, text="⭠", font=CTkFont('Arial', size=50), bg_color='transparent',
                                 fg_color='transparent', width=30, hover=False, cursor='hand2',
-                                command=lambda :self.frame_menager(3))
+                                command=self.quit_chat)
         back_button.place(x=10, y=10)
         key = CTkEntry(self.chat, placeholder_text="Chave de criptografia", font=CTkFont('Arial', 22),
                        width=320)
         key.place(y=25, x=80)
         key_button = CTkButton(self.chat, text="🔑", font=CTkFont('Arial', size=40), bg_color='transparent',
                                 fg_color='transparent', width=30, hover=False, cursor='hand2',
-                                command=lambda :self.frame_menager(3))
+                                command=lambda: self.decrypt_conversation(key.get()))
         key_button.place(x=410, y=10)
-        messages_frame = CTkScrollableFrame(self.chat)
-        messages_frame.grid_columnconfigure(0, weight=1)
-        messages_frame.grid(row=0, column=0, padx=10, pady=(80, 0), sticky="nsew")
         for message in self.current_messages:
             msg = CTkFrame(messages_frame, fg_color='#00533b')
-            label = CTkLabel(msg, text=message.content, font=CTkFont("Arial", 22), fg_color='transparent',
+            text = message.content
+            for i in range(1, len(text) + 1):
+                if i % 32 == 0:
+                    text = text[0:i - 1] + '\n' + text[i - 1:len(text)]
+            label = CTkLabel(msg, text=text, font=CTkFont("Arial", 22), fg_color='transparent',
                              bg_color='transparent')
             label.pack(pady=5, padx=10)
             if message.sender == self.current_user.get_id():
                 msg.configure(fg_color='#545454')
-                msg.grid(column=0, sticky='e')
+                msg.grid(column=0, sticky='e', pady=(5,0))
             else:
-                msg.grid(column=0, sticky='w')
+                msg.grid(column=0, sticky='w', pady=(5,0))
         new_message_frame = CTkFrame(self.chat)
         new_message_frame.grid(row=1, column=0, pady=20)
         new_message = CTkEntry(new_message_frame, placeholder_text="Mensagem", font=CTkFont('Arial', 22),
